@@ -1,5 +1,6 @@
 #include <p32xxxx.h>
 #include <plib.h>
+#include <math.h>
 
 // Config settings
 // POSCMOD = HS, FNOSC = PRIPLL, FWDTEN = OFF
@@ -100,9 +101,26 @@ void initializeUART(void) {
  
 }
 
+void initializeADC(void) {
+        CloseADC10(); // ensure ADC is off before adjusting settings
+
+    PORTSetPinsAnalogIn( IOPORT_B, BIT_5 | BIT_4 ); // AtD inputs for Pot and Thermometer unit
+    //ConfigIntADC10( ADC_INT_DISABLE ); // disable AtD interrupts
+
+    #define ADC_CONFIG1 ADC_MODULE_ON | ADC_FORMAT_INTG16 | ADC_CLK_MANUAL | ADC_AUTO_SAMPLING_ON | ADC_SAMP_OFF
+    #define ADC_CONFIG2 ADC_VREF_AVDD_AVSS | ADC_OFFSET_CAL_DISABLE | ADC_SCAN_OFF | ADC_SAMPLES_PER_INT_2 | ADC_ALT_BUF_ON | ADC_ALT_INPUT_ON
+    #define ADC_CONFIG3 ADC_CONV_CLK_INTERNAL_RC | ADC_SAMPLE_TIME_15
+    #define ADC_CONFIG4 ENABLE_AN4_ANA | ENABLE_AN5_ANA
+    #define ADC_CONFIG5 SKIP_SCAN_ALL
+
+    SetChanADC10( ADC_CH0_NEG_SAMPLEA_NVREF | ADC_CH0_POS_SAMPLEA_AN4 | ADC_CH0_NEG_SAMPLEB_NVREF | ADC_CH0_POS_SAMPLEB_AN5 );
+    OpenADC10( ADC_CONFIG1, ADC_CONFIG2, ADC_CONFIG3, ADC_CONFIG4, ADC_CONFIG5 );
+    EnableADC10();
+}
+
 void configureInterrupts(void) {
-        // Configure UART2 RX Interrupt
-        INTEnable(INT_SOURCE_UART_RX(UART2), INT_ENABLED);
+    // Configure UART2 RX Interrupt
+    INTEnable(INT_SOURCE_UART_RX(UART2), INT_ENABLED);
     INTSetVectorPriority(INT_VECTOR_UART(UART2), INT_PRIORITY_LEVEL_2);
     INTSetVectorSubPriority(INT_VECTOR_UART(UART2), INT_SUB_PRIORITY_LEVEL_0);
 
@@ -112,10 +130,70 @@ void configureInterrupts(void) {
     INTSetVectorPriority(INT_VECTOR_UART(UART1), INT_PRIORITY_LEVEL_3);
     INTSetVectorSubPriority(INT_VECTOR_UART(UART1), INT_SUB_PRIORITY_LEVEL_0);
 
-        // configure for multi-vectored mode
+    // configure for multi-vectored mode
     INTConfigureSystem(INT_SYSTEM_CONFIG_MULT_VECTOR);
+}
 
+/*
+ * @author - Vineeth
+ *
+ * @params - valueToBePrinted => Is the integer value that needs to be converted
+ *                              into a string and printed out on UART
+ *
+ * This function accepts a integer value, and does the necessary conversions
+ * required to send the value out on UART using printf
+ */
+void convertAndPrintIntegerToString(char * stringToBePrinted, int valueToBePrinted) {
+    int temp = valueToBePrinted;
+    int lengthOfInteger = 0;
 
+    WriteString(stringToBePrinted);
+    /*
+     *  Loop to count number of digits in the integer to be printed.
+     */
+    while(temp != 0) {
+        temp = temp / 10;
+        lengthOfInteger++;
+    }
+
+    int modDivideValue = 0;
+    int digitToBePrinted = 0;
+
+    /*
+     *  Loop to actually start printing out each digit in the integer from left
+     *  to right.
+     */
+    while(lengthOfInteger != 0) {
+        modDivideValue = pow(10, --lengthOfInteger);
+        digitToBePrinted = valueToBePrinted / modDivideValue;
+        valueToBePrinted = valueToBePrinted % modDivideValue;
+
+        switch(digitToBePrinted) {
+            case 0 : WriteString("0");
+                     break;
+            case 1 : WriteString("1");
+                     break;
+            case 2 : WriteString("2");
+                     break;
+            case 3 : WriteString("3");
+                     break;
+            case 4 : WriteString("4");
+                     break;
+            case 5 : WriteString("5");
+                     break;
+            case 6 : WriteString("6");
+                     break;
+            case 7 : WriteString("7");
+                     break;
+            case 8 : WriteString("8");
+                     break;
+            case 9 : WriteString("9");
+                     break;
+            default : WriteString("");
+                     break;
+        }
+    }
+    WriteString(" ");
 }
 
 main()
@@ -123,13 +201,14 @@ main()
     // Disable JTAG (on RA0 and RA1 )
     mJTAGPortEnable( DEBUG_JTAGPORT_OFF );
 
-    // Configure the device for maximum performance but do not change the PBDIV
+        // Configure the device for maximum performance but do not change the PBDIV
         // Given the options, this function will change the flash wait states, RAM
         // wait state and enable prefetch cache but will not change the PBDIV.
         // The PBDIV value is already set via the pragma FPBDIV option above..
         SYSTEMConfig(GetSystemClock(), SYS_CFG_WAIT_STATES | SYS_CFG_PCACHE);
 
         initializeUART();
+        initializeADC();
         configureInterrupts();
 
     T1CON = 0x8030; // TMR1 on, prescale 1:256 PB
@@ -138,10 +217,11 @@ main()
     mPORTDSetPinsDigitalIn( PB_MASK_D ); // PBs on D = input
         // enable interrupts
     INTEnableInterrupts();
-   
+    int i = 0;
     while( 1 )
     {
-        WriteString("Testt");
+        //WriteString("Testt");
+        convertAndPrintIntegerToString("i => ", i++);
         long j = 1024*1024;
         while(j--) {};
         mPORTAToggleBits(LED_MASK);
