@@ -79,18 +79,8 @@
 
 void WriteString(const char *string);
 
-main()
-{
-    // Disable JTAG (on RA0 and RA1 )
-    mJTAGPortEnable( DEBUG_JTAGPORT_OFF );
-
-    // Configure the device for maximum performance but do not change the PBDIV
-        // Given the options, this function will change the flash wait states, RAM
-        // wait state and enable prefetch cache but will not change the PBDIV.
-        // The PBDIV value is already set via the pragma FPBDIV option above..
-        SYSTEMConfig(GetSystemClock(), SYS_CFG_WAIT_STATES | SYS_CFG_PCACHE);
-
-        // Configure UART2
+void initializeUART(void) {
+           // Configure UART2
         // This initialization assumes 36MHz Fpb clock. If it changes,
         // you will have to modify baud rate initializer.
         UARTConfigure(UART2, UART_ENABLE_PINS_TX_RX_ONLY);
@@ -107,6 +97,10 @@ main()
     UARTSetDataRate(UART1, GetPeripheralClock(), 38400 );
     UARTEnable(UART1, UART_ENABLE_FLAGS(UART_PERIPHERAL | UART_RX | UART_TX));
 
+ 
+}
+
+void configureInterrupts(void) {
         // Configure UART2 RX Interrupt
         INTEnable(INT_SOURCE_UART_RX(UART2), INT_ENABLED);
     INTSetVectorPriority(INT_VECTOR_UART(UART2), INT_PRIORITY_LEVEL_2);
@@ -121,37 +115,36 @@ main()
         // configure for multi-vectored mode
     INTConfigureSystem(INT_SYSTEM_CONFIG_MULT_VECTOR);
 
+
+}
+
+main()
+{
+    // Disable JTAG (on RA0 and RA1 )
+    mJTAGPortEnable( DEBUG_JTAGPORT_OFF );
+
+    // Configure the device for maximum performance but do not change the PBDIV
+        // Given the options, this function will change the flash wait states, RAM
+        // wait state and enable prefetch cache but will not change the PBDIV.
+        // The PBDIV value is already set via the pragma FPBDIV option above..
+        SYSTEMConfig(GetSystemClock(), SYS_CFG_WAIT_STATES | SYS_CFG_PCACHE);
+
+        initializeUART();
+        configureInterrupts();
+
     T1CON = 0x8030; // TMR1 on, prescale 1:256 PB
 
     mPORTASetPinsDigitalOut( LED_MASK ); // LEDs = output
     mPORTDSetPinsDigitalIn( PB_MASK_D ); // PBs on D = input
-
         // enable interrupts
     INTEnableInterrupts();
-
-        unsigned short int i, temp;
-    unsigned short int PB1_prev;
-    unsigned short int PB2_prev;
-    unsigned short int PB4_prev;
-    unsigned short int sequence[9] = {0,0,0,0,0,0,0,0,0};
-
-        //WriteString("*** UART Interrupt-driven Application Example ***\r\n");
-        //WriteString("*** Type some characters and observe echo and RA7 LED toggle ***\r\n");
-
-        ClearLED1();
-        ClearLED2();
-        ClearLED3();
-        ClearLED4();
-        ClearLED5();
-        ClearLED6();
-        ClearLED7();
-        ClearLED8();
-        
+   
     while( 1 )
     {
         WriteString("Testt");
-        long j = 1024*1024*10;
+        long j = 1024*1024;
         while(j--) {};
+        mPORTAToggleBits(LED_MASK);
         TMR1 =  0;
         while ( TMR1 < SHORT_DELAY ){} // delay
 
