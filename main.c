@@ -78,8 +78,14 @@
 #define PB2_Pressed() !mPORTDReadBits( PB2 )
 #define PB4_Pressed() !mPORTDReadBits( PB4 )
 
+unsigned int adcSampledInputChannel4 = 0; // ADC sampled input for channel 4 should be stored here
+unsigned int adcSampledInputChannel5 = 0; // ADC sampled input for channel 5 should be stored here
+
 void WriteString(const char *string);
 
+/*
+ * Initializes the UART with the config
+ */
 void initializeUART(void) {
            // Configure UART2
         // This initialization assumes 36MHz Fpb clock. If it changes,
@@ -101,14 +107,18 @@ void initializeUART(void) {
  
 }
 
+/*
+ * Initializes the ADC config
+ */
 void initializeADC(void) {
-        CloseADC10(); // ensure ADC is off before adjusting settings
+    CloseADC10(); // ensure ADC is off before adjusting settings
 
-    PORTSetPinsAnalogIn( IOPORT_B, BIT_5 | BIT_4 ); // AtD inputs for Pot and Thermometer unit
+    PORTSetPinsAnalogIn( IOPORT_B, BIT_5 | BIT_4 ); // AtD inputs for sampling LED
     //ConfigIntADC10( ADC_INT_DISABLE ); // disable AtD interrupts
 
+    // all these PARAMS are defined in adc10.h
     #define ADC_CONFIG1 ADC_MODULE_ON | ADC_FORMAT_INTG16 | ADC_CLK_MANUAL | ADC_AUTO_SAMPLING_ON | ADC_SAMP_OFF
-    #define ADC_CONFIG2 ADC_VREF_AVDD_AVSS | ADC_OFFSET_CAL_DISABLE | ADC_SCAN_OFF | ADC_SAMPLES_PER_INT_2 | ADC_ALT_BUF_ON | ADC_ALT_INPUT_ON
+    #define ADC_CONFIG2 ADC_VREF_EXT_EXT | ADC_OFFSET_CAL_DISABLE | ADC_SCAN_OFF | ADC_SAMPLES_PER_INT_2 | ADC_ALT_BUF_ON | ADC_ALT_INPUT_ON
     #define ADC_CONFIG3 ADC_CONV_CLK_INTERNAL_RC | ADC_SAMPLE_TIME_15
     #define ADC_CONFIG4 ENABLE_AN4_ANA | ENABLE_AN5_ANA
     #define ADC_CONFIG5 SKIP_SCAN_ALL
@@ -118,6 +128,9 @@ void initializeADC(void) {
     EnableADC10();
 }
 
+/*
+ * Configures the UART interrupts
+ */
 void configureInterrupts(void) {
     // Configure UART2 RX Interrupt
     INTEnable(INT_SOURCE_UART_RX(UART2), INT_ENABLED);
@@ -196,6 +209,18 @@ void convertAndPrintIntegerToString(char * stringToBePrinted, int valueToBePrint
     WriteString(" ");
 }
 
+void sampleADCInputs() {
+     ConvertADC10(); // start a conversion
+     while( BusyADC10() ) {} // while busy, wait
+
+     unsigned int offset;
+     offset = 8 * ((~ReadActiveBufferADC10() & 0x01));
+
+     adcSampledInputChannel4 = ReadADC10( offset );
+     adcSampledInputChannel5 = ReadADC10( offset + 1 );
+}
+
+
 main()
 {
     // Disable JTAG (on RA0 and RA1 )
@@ -221,7 +246,10 @@ main()
     while( 1 )
     {
         //WriteString("Testt");
+        sampleADCInputs();
         convertAndPrintIntegerToString("i => ", i++);
+        convertAndPrintIntegerToString(" 4 => ", adcSampledInputChannel4);
+        convertAndPrintIntegerToString(" 5 => ", adcSampledInputChannel5);
         long j = 1024*1024;
         while(j--) {};
         mPORTAToggleBits(LED_MASK);
