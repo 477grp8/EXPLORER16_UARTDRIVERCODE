@@ -171,7 +171,7 @@ void convertAndPrintIntegerToString(char * stringToBePrinted, int valueToBePrint
 
     int modDivideValue = 0;
     int digitToBePrinted = 0;
-
+  
     /*
      *  Loop to actually start printing out each digit in the integer from left
      *  to right.
@@ -206,17 +206,72 @@ void convertAndPrintIntegerToString(char * stringToBePrinted, int valueToBePrint
                      break;
         }
     }
-    WriteString("\n");
+    WriteString(" ");
 }
 
 /*
  * @author - Vineeth
  *
+ * @params - int delayTime in milliseconds -- causes delay based on delayTime
+ *
+ * Can be used anywhere a delay is needed to accodomate processing time or to wait on something
+ */
+void delay(int delayTime) {
+    long count = ((long)delayTime * 0.001) * 80000000ul;
+    while(count != 0) {
+        count--;
+    }
+}
+
+/*
+ * @author - Vineeth
+ *
+ * @params - int LCDByte -- byte to be sent
+ *         - int dataOrInstruction -- 0 if instruction, 1 if data
+ *         - int RW -- 0 if write, 1 if read
+ *
+ * Used to send a specific data byte to the LCD to display
+ */
+void sendByteToLCD(char LCDByte, int dataOrInstruction, int RW) {
+    
+    PORTSetPinsDigitalOut(IOPORT_E, BIT_4); //RS
+    PORTSetPinsDigitalOut(IOPORT_E, BIT_3); //R/W
+    PORTSetPinsDigitalOut(IOPORT_E, BIT_2); //E
+    PORTSetPinsDigitalOut(IOPORT_G, BIT_13); //DB0
+    PORTSetPinsDigitalOut(IOPORT_G, BIT_12); //DB1
+    PORTSetPinsDigitalOut(IOPORT_G, BIT_14); //DB2
+    PORTSetPinsDigitalOut(IOPORT_E, BIT_1); //DB3
+    PORTSetPinsDigitalOut(IOPORT_E, BIT_0); //DB4
+    PORTSetPinsDigitalOut(IOPORT_A, BIT_7); //DB5
+    PORTSetPinsDigitalOut(IOPORT_A, BIT_6); //DB6
+    PORTSetPinsDigitalOut(IOPORT_G, BIT_0); //DB7
+    
+
+    (dataOrInstruction == 0) ? PORTClearBits(IOPORT_E, BIT_4) : PORTSetBits(IOPORT_E, BIT_4);
+    (RW == 0) ? PORTClearBits(IOPORT_E, BIT_3) : PORTSetBits(IOPORT_E, BIT_3);
+    ((LCDByte & 0x01) == 0x01) ? PORTSetBits(IOPORT_G, BIT_13) : PORTClearBits(IOPORT_G, BIT_13);
+    (((LCDByte >> 1) & 0x01) == 0x01) ? PORTSetBits(IOPORT_G, BIT_12) : PORTClearBits(IOPORT_G, BIT_12);
+    (((LCDByte >> 2) & 0x01) == 0x01) ? PORTSetBits(IOPORT_G, BIT_14) : PORTClearBits(IOPORT_G, BIT_14);
+    (((LCDByte >> 3) & 0x01) == 0x01) ? PORTSetBits(IOPORT_E, BIT_1) : PORTClearBits(IOPORT_E, BIT_1);
+    (((LCDByte >> 4) & 0x01) == 0x01) ? PORTSetBits(IOPORT_E, BIT_0) : PORTClearBits(IOPORT_E, BIT_0);
+    (((LCDByte >> 5) & 0x01) == 0x01) ? PORTSetBits(IOPORT_A, BIT_7) : PORTClearBits(IOPORT_A, BIT_7);
+    (((LCDByte >> 6) & 0x01) == 0x01) ? PORTSetBits(IOPORT_A, BIT_6) : PORTClearBits(IOPORT_A, BIT_6);
+    (((LCDByte >> 7) & 0x01) == 0x01) ? PORTSetBits(IOPORT_G, BIT_0) : PORTClearBits(IOPORT_G, BIT_0);
+
+    PORTSetBits(IOPORT_E, BIT_2);
+    delay(1);
+    PORTClearBits(IOPORT_E, BIT_2);
+
+}
+
+/*
+ * @author - Vineeth & Fabian
+ *
  * @params - void
  *
  * Intializes the LCD by sending the various initializations
  */
-void initializeLCD(void) {
+void initializeLCD() {
     /*
      * LCD PIN # || Symbol || PIC32MX795F512H pin assignment
      *     1          Vss                GND
@@ -259,54 +314,19 @@ void initializeLCD(void) {
     delay(10);
     sendByteToLCD(0x38, 0, 0); // 8-bit and 2 line
     sendByteToLCD(0x10, 0, 0); // set cursor
-    sendByteToLCD(0x0C, 0, 0); // display on; cursor on
+    sendByteToLCD(0x0F, 0, 0); // display on; cursor on; blinking cursor on
     sendByteToLCD(0x06, 0, 0); // entry mode on
+    sendByteToLCD(0x01, 0, 0); // clear the display
+
+    printToLCD(" LCD Initialization       Complete");
 }
+
+
 
 /*
  * @author - Vineeth
  *
- * @params - int LCDByte -- byte to be sent
- *         - int dataOrInstruction -- 0 if instruction, 1 if data
- *         - int RW -- 0 if write, 1 if read
- *
- * Used to send a specific data byte to the LCD to display
- */
-void sendByteToLCD(char LCDByte, int dataOrInstruction, int RW) {
-    PORTSetPinsDigitalOut(IOPORT_E, BIT_4); //RS
-    PORTSetPinsDigitalOut(IOPORT_E, BIT_3); //R/W
-    PORTSetPinsDigitalOut(IOPORT_E, BIT_2); //E
-    PORTSetPinsDigitalOut(IOPORT_G, BIT_13); //DB0
-    PORTSetPinsDigitalOut(IOPORT_G, BIT_12); //DB1
-    PORTSetPinsDigitalOut(IOPORT_G, BIT_14); //DB2
-    PORTSetPinsDigitalOut(IOPORT_E, BIT_1); //DB3
-    PORTSetPinsDigitalOut(IOPORT_E, BIT_0); //DB4
-    PORTSetPinsDigitalOut(IOPORT_A, BIT_7); //DB5
-    PORTSetPinsDigitalOut(IOPORT_A, BIT_6); //DB6
-    PORTSetPinsDigitalOut(IOPORT_G, BIT_0); //DB7
-
-
-    (dataOrInstruction == 0) ? PORTClearBits(IOPORT_E, BIT_4) : PORTSetBits(IOPORT_E, BIT_4);
-    (RW == 0) ? PORTClearBits(IOPORT_E, BIT_3) : PORTSetBits(IOPORT_E, BIT_3);
-    ((LCDByte & 0x01) == 1) ? PORTSetBits(IOPORT_G, BIT_13) : PORTClearBits(IOPORT_G, BIT_13);
-    (((LCDByte >> 1) & 0x01) == 1) ? PORTSetBits(IOPORT_G, BIT_12) : PORTClearBits(IOPORT_G, BIT_12);
-    (((LCDByte >> 2) & 0x01) == 1) ? PORTSetBits(IOPORT_G, BIT_14) : PORTClearBits(IOPORT_G, BIT_14);
-    (((LCDByte >> 3) & 0x01) == 1) ? PORTSetBits(IOPORT_E, BIT_1) : PORTClearBits(IOPORT_E, BIT_1);
-    (((LCDByte >> 4) & 0x01) == 1) ? PORTSetBits(IOPORT_E, BIT_0) : PORTClearBits(IOPORT_E, BIT_0);
-    (((LCDByte >> 5) & 0x01) == 1) ? PORTSetBits(IOPORT_A, BIT_7) : PORTClearBits(IOPORT_A, BIT_7);
-    (((LCDByte >> 6) & 0x01) == 1) ? PORTSetBits(IOPORT_A, BIT_6) : PORTClearBits(IOPORT_A, BIT_6);
-    (((LCDByte >> 7) & 0x01) == 1) ? PORTSetBits(IOPORT_G, BIT_0) : PORTClearBits(IOPORT_G, BIT_0);
-
-    PORTSetBits(IOPORT_E, BIT_2);
-    delay(1);
-    PORTClearBits(IOPORT_E, BIT_2);
-
-}
-
-/*
- * @author - Vineeth
- *
- * @params - char charToLCD -- character to be display
+ * @params - char charToLCD -- character to be displayed
  *
  * Used for writing a character onto the LCD
  */
@@ -314,19 +334,7 @@ void displayCharacterOnLCD(char charToLCD) {
     sendByteToLCD(charToLCD, 1, 0);
 }
 
-/*
- * @author - Vineeth
- *
- * @params - int delayTime in milliseconds -- causes delay based on delayTime
- *
- * Can be used anywhere a delay is needed to accodomate processing time or to wait on something
- */
-void delay(int delayTime) {
-    long count = ((long)delayTime * 0.001) * 80000000ul;
-    while(count != 0) {
-        count--;
-    }
-}
+
 
 void sampleADCInputs() {
      ConvertADC10(); // start a conversion
@@ -339,6 +347,20 @@ void sampleADCInputs() {
      adcSampledInputChannel5 = ReadADC10( offset + 1 );
 }
 
+/*
+ * @author - Fabian
+ *
+ * @params - char* str -- string to be displayed
+ *
+ * Used for writing string onto the LCD
+ */
+void printToLCD(char* str){
+    char* x = str;
+    while (*x != '\0'){ //loop through the string and display it per character
+        displayCharacterOnLCD(*x);
+        x++; //increment pointer
+    }
+}
 
 main()
 {
@@ -360,8 +382,10 @@ main()
 
     mPORTASetPinsDigitalOut( LED_MASK ); // LEDs = output
     mPORTDSetPinsDigitalIn( PB_MASK_D ); // PBs on D = input
-        // enable interrupts
+
+    // enable interrupts
     INTEnableInterrupts();
+
     int i = 0;
     while( 1 )
     {
