@@ -6,7 +6,7 @@
 #include "UART.h"
 #include "CONFIG.h"
 #include "MISCELLANEOUS.h"
-
+#include "TIMER.h"
 main()
 {
     // Disable JTAG (on RA0 and RA1 )
@@ -21,6 +21,7 @@ main()
         initializeUART();
         initializeADC();
         initializeLCD();
+        ConfigTimer1(); // Enable Timer1 for second counts
         configureInterrupts();
 
     T1CON = 0x8030; // TMR1 on, prescale 1:256 PB
@@ -35,7 +36,6 @@ main()
     while( 1 )
     {
         //WriteString("Testt");
-        sampleADCInputs();
         convertAndPrintIntegerToString("i => ", i++);
         convertAndPrintIntegerToString(" 4 => ", getChannel4Value());
         convertAndPrintIntegerToString(" 5 => ", getChannel5Value());
