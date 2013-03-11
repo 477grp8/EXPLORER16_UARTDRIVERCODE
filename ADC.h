@@ -6,7 +6,7 @@
  */
 
 #ifndef ADC_H
-#define  ADC_H
+#define    ADC_H
 
 #include <p32xxxx.h>
 #include <plib.h>
@@ -47,12 +47,62 @@ void sampleADCInputs() {
      adcSampledInputChannel5 = ReadADC10( offset + 1 );
 }
 
+/*
+ * @author - Vineeth
+ *
+ * @params - void
+ *
+ * returns the sampled value on AN4 channel
+ */
 int getChannel4Value() {
     return adcSampledInputChannel4;
 }
 
+/*
+ * @author - Vineeth
+ *
+ * @params - void
+ *
+ * returns the sampled value on AN5 channel
+ */
 int getChannel5Value() {
     return adcSampledInputChannel5;
+}
+
+/*
+ * @author - Vineeth
+ *
+ * @params - void
+ *
+ * Turns off the RB3 pin to turn off the LED
+ */
+void TurnOffLexmarkLED() {
+    mPORTBSetPinsDigitalOut( BIT_3 );
+    mPORTBClearBits(BIT_3);
+    mPORTBSetPinsDigitalIn( BIT_3 );
+}
+
+/*
+ * @author - Vineeth
+ *
+ * @params - void
+ *
+ * Turns on the RB3 pin to turn on the LED
+ */
+void TurnOnLexmarkLED() {
+    mPORTBSetPinsDigitalOut( BIT_3 );
+    mPORTBSetBits(BIT_3);
+}
+
+/*
+ * @author - Vineeth
+ *
+ * @params - void
+ *
+ * Calls the ADC sampling routine and any other checks required to detect light in the environment
+ */
+void SampleLexmarkLEDVoltage() {
+    sampleADCInputs();
 }
 
 #endif	/* ADC_H */
