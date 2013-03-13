@@ -24,7 +24,7 @@ main()
         ConfigTimer1(); // Enable Timer1 for second counts
         configureInterrupts();
 
-    T1CON = 0x8030; // TMR1 on, prescale 1:256 PB
+//    T2CON = 0x8030; // TMR1 on, prescale 1:256 PB
 
     mPORTASetPinsDigitalOut( LED_MASK ); // LEDs = output
     mPORTDSetPinsDigitalIn( PB_MASK_D ); // PBs on D = input
@@ -37,13 +37,15 @@ main()
     {
         //WriteString("Testt");
         convertAndPrintIntegerToString("i => ", i++);
-        convertAndPrintIntegerToString(" 4 => ", getChannel4Value());
-        convertAndPrintIntegerToString(" 5 => ", getChannel5Value());
+        convertAndPrintIntegerToString("4 => ", getChannel4Value());
+        convertAndPrintIntegerToString("5 => ", getChannel5Value());
+        WriteString("\r");
         long j = 1024*1024;
         while(j--) {};
         mPORTAToggleBits(LED_MASK);
-        TMR1 =  0;
-        while ( TMR1 < SHORT_DELAY ){} // delay
+
+//        TMR2 =  0;
+//        while ( TMR2 < SHORT_DELAY ){} // delay
 
     } // main (while) loop
 
