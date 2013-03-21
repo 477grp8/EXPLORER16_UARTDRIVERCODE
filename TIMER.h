@@ -3,6 +3,8 @@
  * Author: team8
  *
  * Created on March 10, 2013, 3:20 PM
+ *
+ * This code was built upon and modified using the base code from : http://code.google.com/p/the-incredible-hud/source/browse/Microcontroller_Code/Final_Code/src/HelmetTimers.h
  */
 
 #ifndef TIMER_H
