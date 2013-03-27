@@ -48,7 +48,26 @@ void sendByteToLCD(char LCDByte, int dataOrInstruction, int RW) {
     (((LCDByte >> 7) & 0x01) == 0x01) ? PORTSetBits(IOPORT_G, BIT_0) : PORTClearBits(IOPORT_G, BIT_0);
 
     PORTSetBits(IOPORT_E, BIT_2);
+    
+    /////////////////////////////
+    // This delay is a waste of
+    // processing time.
+    // You should start a timer
+    // or something like that
+    // to count and set a flag
+    // when it overflows as a 
+    // sign to send the next
+    // character to the LCD
+    //   -- Blaine
+    // (I guess you don't HAVE
+    // to do this, but it would
+    // be a good idea, as it
+    // would be HIGHLY important
+    // for time-critical code.)
+    /////////////////////////////
     delay(1);
+    /////////////////////////////
+    
     PORTClearBits(IOPORT_E, BIT_2);
 
 }
